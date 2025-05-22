@@ -1,0 +1,34 @@
+- name: debian | 配置 repo mirror 
+  template:
+    src: apt_sources.list.j2
+    dest: /etc/apt/sources.list
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: debian | 更新 repo 缓存
+  apt:
+    update_cache: yes
+
+- name: debian | 安装基础软件包
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ apt_packages }}"
+
+- name: 临时关闭 AppArmor 服务
+  service:
+    name: apparmor
+    state: stopped     
+  when:
+    - "'apparmor.service' in ansible_facts.services"
+    - ansible_facts.services['apparmor.service'].state == 'running' 
+  tags: [apparmor]
+
+- name: 永久关闭 AppArmor
+  service:
+    name: apparmor
+    enabled: no
+  when:
+    - "'apparmor.service' in ansible_facts.services" 
+  tags: [apparmor]

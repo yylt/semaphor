@@ -1,0 +1,49 @@
+- name: 节点信息
+  setup:
+
+- include_tasks: debian.yml
+  when: ansible_os_family == 'Debian'
+
+- include_tasks: redhat.yml
+  when: 
+  - ansible_os_family == 'RedHat' 
+
+
+- name: 更新 /etc/hosts 条目 (删除旧行并添加新行)
+  loop: "{{ custom_hosts }}"
+  loop_control:
+    label: "处理主机条目: {{ item.hostname }}" 
+
+  block:
+    - name: 删除 /etc/hosts 中包含 {{ item.hostname }} 的所有行
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '.*{{ item.hostname }}.*'
+        state: absent 
+        backup: no   
+
+    - name: 添加或更新 {{ item.ip }} {{ item.hostname }} 到 /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ item.ip }} {{ item.hostname }}"
+        regexp: "^{{ item.ip }} {{ item.hostname }}$"
+        state: present
+        owner: root
+        group: root
+        mode: '0644'
+        insertafter: EOF 
+        backup: yes
+
+- name: 更新 /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.ip }} {{ item.hostname }}"
+    regexp: "^{{ item.ip }} {{ item.hostname }}$" # 使用 item.ip 和 item.hostname 匹配
+    state: present
+    owner: root
+    group: root
+    mode: '0644'
+    insertafter: EOF 
+  loop: "{{ custom_hosts }}" 
+  loop_control:
+    label: "Adding {{ item.hostname }} ({{ item.ip }}) to /etc/hosts" # 优化输出，显示当前处理的域名

@@ -1,0 +1,6 @@
+
+
+dns_resolvconf_file: /etc/resolv.conf
+dns_nameservers:
+- 223.5.5.5
+- 114.114.114.114

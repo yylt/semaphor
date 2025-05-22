@@ -1,0 +1,4 @@
+- hosts: newhost
+  roles:
+  - new
+  - dns

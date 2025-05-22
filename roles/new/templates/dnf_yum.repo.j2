@@ -1,0 +1,18 @@
+
+[{{ ansible_distribution | lower }}-baseos]
+name={{ ansible_distribution }} - BaseOS
+baseurl={{ mirror_dnf_yum_url }}/{{ mirror_dnf_yum_baseos }}/$basearch/{{ mirror_dnf_yum_os }}/
+gpgcheck=0
+enabled=1
+
+[{{ ansible_distribution | lower }}-appstream]
+name={{ ansible_distribution }} - AppStream
+baseurl={{ mirror_dnf_yum_url }}/{{ mirror_dnf_yum_appstream }}/$basearch/{{ mirror_dnf_yum_os }}/
+gpgcheck=0
+enabled=1
+
+[{{ ansible_distribution | lower }}-extras]
+name={{ ansible_distribution }} - Extras
+baseurl={{ mirror_dnf_yum_url }}/{{ mirror_dnf_yum_extras }}/$basearch/{{ mirror_dnf_yum_os }}/
+gpgcheck=0
+enabled=1

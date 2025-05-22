@@ -1,0 +1,76 @@
+
+- name: 查找 /etc/yum.repos.d/ 目录下未以 .bak 结尾的文件
+  find:
+    paths: /etc/yum.repos.d/ 
+    file_type: file          
+    patterns: "*"            
+    excludes: "*.bak"        
+  register: yum_repo_files_to_backup 
+
+- name: 将找到的文件重命名为 .bak 结尾
+  command: "mv {{ item.path }} {{ item.path }}.bak"
+  args:
+    creates: "{{ item.path }}.bak"
+  loop: "{{ yum_repo_files_to_backup.files }}" 
+
+- name: 根据发行版和版本设置 baseurl 变量
+  set_fact:
+    baseurl: >- 
+      {% if ansible_distribution == 'AlmaLinux' %}
+      https://mirrors.aliyun.com/vault/$releasever
+      {% elif ansible_distribution_major_version == '8' %}
+      http://mirrors.aliyun.com/centos-vault/8-stream
+      {% else %}
+      '' 
+      {% endif %}
+    mirror_dnf_yum_os: >-
+      {% if ansible_distribution == 'AlmaLinux' %}
+      Source
+      {% elif ansible_distribution_major_version == '8' %}
+      os
+      {% else %}
+      '' 
+      {% endif %}
+
+- name: 如果 baseurl 为空，则错误退出 Playbook
+  ansible.builtin.fail:
+    msg: "无法为 {{ ansible_distribution }} {{ ansible_distribution_major_version | default('') }} 设置有效的 baseurl。"
+  when: baseurl == ''
+  
+- name: redhat | 配置 repo mirror 
+  template:
+    src: dnf_yum.repo.j2
+    dest: "/etc/yum.repos.d/{{ ansible_distribution | lower }}.repo"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: redhat | 配置 roller_repo
+  template:
+    src: roller.repo.j2
+    dest: "/etc/yum.repos.d/{{ roller_repo_name | lower }}.repo"
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+  - (roller_repo_url | default('') | trim) != ''
+
+- name: redhat | 更新 repo 缓存
+  command: "dnf makecache"
+
+- name: 临时关闭 SELinux 
+  command: setenforce 0
+  args:
+    warn: no # 禁用警告
+  tags: [selinux]
+
+- name: 永久关闭 SELinux 
+  lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='     
+    line: 'SELINUX=disabled' 
+    state: present
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes   

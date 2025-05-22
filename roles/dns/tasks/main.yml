@@ -1,0 +1,27 @@
+# tasks file for dns
+---
+- name: 收集服务状态
+  service_facts:
+
+
+- name: 设置 NetworkManager.conf 中 [main] 块 dns
+  ini_file:
+    path: /etc/NetworkManager/NetworkManager.conf
+    section: main
+    option: dns
+    value: none
+    mode: '0644' 
+    backup: yes  
+  when:
+    - ansible_facts.services['NetworkManager.service'] is defined
+    - ansible_facts.services['NetworkManager.service'].state == 'running'
+  tags:
+    - dns
+
+- name: dns | configure dns servers - /etc/resolv.conf
+  template:
+    src: resolv.conf.j2
+    dest: "{{ dns_resolvconf_file }}"
+  tags:
+    - dns
+
