@@ -4,7 +4,7 @@
     custom_hosts: "{{ custom_hosts + [{'ip': ansible_host, 'hostname': ansible_hostname}] }}"
   with_items: "{{ ansible_play_hosts_all }}" 
 
-- name: 删除 /etc/hosts 中包含 {{ item.hostname }} 的所有行
+- name: 删除 /etc/hosts 中指定名称的条目
   lineinfile:
     path: /etc/hosts
     regexp: '.*{{ item.hostname }}.*'
@@ -12,7 +12,7 @@
     backup: no   
   with_items: "{{ custom_hosts }}"
 
-- name: 添加或更新 {{ item.ip }} {{ item.hostname }} 到 /etc/hosts
+- name: 添加或更新条目到 /etc/hosts
   lineinfile:
     path: /etc/hosts
     line: "{{ item.ip }} {{ item.hostname }}"

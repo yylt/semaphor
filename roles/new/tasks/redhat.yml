@@ -60,8 +60,6 @@
 
 - name: 临时关闭 SELinux 
   command: setenforce 0
-  args:
-    warn: no # 禁用警告
   tags: [selinux]
 
 - name: 永久关闭 SELinux 
