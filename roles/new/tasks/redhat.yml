@@ -17,7 +17,7 @@
   set_fact:
     baseurl: >- 
       {% if ansible_distribution == 'AlmaLinux' %}
-      https://mirrors.aliyun.com/vault/$releasever
+      https://mirrors.aliyun.com/almalinux/$releasever
       {% elif ansible_distribution_major_version == '8' %}
       http://mirrors.aliyun.com/centos-vault/8-stream
       {% else %}
@@ -25,14 +25,14 @@
       {% endif %}
     mirror_dnf_yum_os: >-
       {% if ansible_distribution == 'AlmaLinux' %}
-      Source
+      os
       {% elif ansible_distribution_major_version == '8' %}
       os
       {% else %}
       '' 
       {% endif %}
 
-- name: 如果 baseurl 为空，则错误退出 Playbook
+- name: 如果 baseurl 为空，则错误退出
   ansible.builtin.fail:
     msg: "无法为 {{ ansible_distribution }} {{ ansible_distribution_major_version | default('') }} 设置有效的 baseurl。"
   when: baseurl == ''

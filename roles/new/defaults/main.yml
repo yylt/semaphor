@@ -1,7 +1,6 @@
 
 # apt mirror
 mirror_apt_url: "http://mirrors.ustc.edu.cn/{{ ansible_distribution | lower }}" # 或 debian/
-mirror_apt_security_url: "http://mirrors.ustc.edu.cn/{{ ansible_distribution | lower }}" # 或 debian/updates/
 mirror_apt_distro: "{{ ansible_distribution_release }}" # 或 bionic, focal, etc.
 
 
@@ -12,24 +11,15 @@ apt_packages:
   - curl
   - vim
   - git
-  - tmux
   - net-tools
-  - iputils-ping
   - iproute2
-  - iftop
-  - htop
   - python3-pip
 
-# For CentOS
-mirror_dnf_yum_url: "http://mirrors.ustc.edu.cn/almalinux/" # 或 centos/
-mirror_dnf_yum_baseos: "BaseOS"
-mirror_dnf_yum_appstream: "AppStream"
-mirror_dnf_yum_extras: "extras"
-
-# Roller repo 配置
+# custom yum repo 配置
 roller_repo_url: ""
 roller_repo_name: "RollerRepo"
 
-custom_hosts:
+# custom hosts
+custom_hosts: []
   # - ip: "192.168.1.100"
   #   hostname: "example.com"

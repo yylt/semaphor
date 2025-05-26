@@ -5,7 +5,8 @@
     owner: root
     group: root
     mode: '0644'
-
+    backup: yes
+    
 - name: debian | 更新 repo 缓存
   apt:
     update_cache: yes
@@ -14,7 +15,7 @@
   apt:
     name: "{{ item }}"
     state: present
-  loop: "{{ apt_packages }}"
+  with_items: "{{ apt_packages }}"
 
 - name: 临时关闭 AppArmor 服务
   service:

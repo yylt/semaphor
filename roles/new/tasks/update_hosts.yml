@@ -1,0 +1,26 @@
+---
+- name: 将当前主机的 IP 和名称追加到 custom_hosts
+  set_fact:
+    custom_hosts: "{{ custom_hosts + [{'ip': ansible_host, 'hostname': ansible_hostname}] }}"
+  with_items: "{{ ansible_play_hosts_all }}" 
+
+- name: 删除 /etc/hosts 中包含 {{ item.hostname }} 的所有行
+  lineinfile:
+    path: /etc/hosts
+    regexp: '.*{{ item.hostname }}.*'
+    state: absent 
+    backup: no   
+  with_items: "{{ custom_hosts }}"
+
+- name: 添加或更新 {{ item.ip }} {{ item.hostname }} 到 /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.ip }} {{ item.hostname }}"
+    regexp: "^{{ item.ip }} {{ item.hostname }}$"
+    state: present
+    owner: root
+    group: root
+    mode: '0644'
+    insertafter: EOF 
+    backup: yes
+  with_items: "{{ custom_hosts }}"
