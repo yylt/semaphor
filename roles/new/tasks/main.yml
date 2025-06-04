@@ -8,4 +8,15 @@
   when: 
   - ansible_os_family == 'RedHat' 
 
-
+- name: Configure SSH client settings
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/ssh_config
+    regexp: "^{{ item.regexp }}" 
+    line: "{{ item.line }}"     
+    state: present
+    create: true             
+    mode: '0644'    
+  loop:
+    - { regexp: 'UserKnownHostsFile', line: 'UserKnownHostsFile /dev/null' }
+    - { regexp: 'StrictHostKeyChecking', line: 'StrictHostKeyChecking no' }
+    - { regexp: 'HashKnownHosts', line: 'HashKnownHosts no' }

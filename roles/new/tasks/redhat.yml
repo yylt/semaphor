@@ -23,14 +23,7 @@
       {% else %}
       '' 
       {% endif %}
-    mirror_dnf_yum_os: >-
-      {% if ansible_distribution == 'AlmaLinux' %}
-      os
-      {% elif ansible_distribution_major_version == '8' %}
-      os
-      {% else %}
-      '' 
-      {% endif %}
+    mirror_dnf_yum_os: os
 
 - name: 如果 baseurl 为空，则错误退出
   ansible.builtin.fail:
