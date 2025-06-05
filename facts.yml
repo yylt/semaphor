@@ -1,0 +1,7 @@
+- name: Collect and display facts
+  hosts: newhost 
+  gather_facts: yes 
+  tasks:
+    - name: Display facts
+      debug:
+        var: ansible_facts

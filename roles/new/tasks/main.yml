@@ -1,10 +1,10 @@
 - name: 更新 /etc/hosts 条目 (删除旧行并添加新行)
-  include_tasks: update_hosts.yml
+  import_tasks: update_hosts.yml
 
-- include_tasks: debian.yml
+- import_tasks: debian.yml
   when: ansible_os_family == 'Debian'
 
-- include_tasks: redhat.yml
+- import_tasks: redhat.yml
   when: 
   - ansible_os_family == 'RedHat' 
 

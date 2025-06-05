@@ -1,6 +1,8 @@
 
 # apt mirror
-mirror_apt_url: "http://mirrors.ustc.edu.cn/{{ ansible_distribution | lower }}" # 或 debian/
+apt_repo_path: ""
+
+mirror_apt_url: "http://mirrors.ustc.edu.cn/{{ apt_repo_path }}/" 
 mirror_apt_distro: "{{ ansible_distribution_release }}" # 或 bionic, focal, etc.
 
 

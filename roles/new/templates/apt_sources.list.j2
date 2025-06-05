@@ -1,5 +1,6 @@
 
 # Main repository
-deb {{ mirror_apt_url }} {{ mirror_apt_distro }} main restricted universe multiverse
-deb {{ mirror_apt_url }} {{ mirror_apt_distro }}-updates main restricted universe multiverse
+deb {{ mirror_apt_url }} {{ mirror_apt_distro }} {{ apt_repo_pool }}
+deb {{ mirror_apt_url }} {{ mirror_apt_distro }}-updates {{ apt_repo_pool }}
+deb {{ mirror_apt_url }} {{ mirror_apt_distro }}-backports {{ apt_repo_pool }}
 
