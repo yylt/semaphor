@@ -1,7 +1,7 @@
 ---
 - name: 将当前主机的 IP 和名称追加到 custom_hosts
   set_fact:
-    custom_hosts: "{{ custom_hosts + [{'ip': ansible_host, 'hostname': ansible_hostname}] }}"
+    custom_hosts: "{{ custom_hosts + [{'ip': ansible_host, 'hostname': item }] }}"
   with_items: "{{ ansible_play_hosts_all }}" 
 
 - name: 删除 /etc/hosts 中指定名称的条目
@@ -22,5 +22,4 @@
     group: root
     mode: '0644'
     insertafter: EOF 
-    backup: yes
   with_items: "{{ custom_hosts }}"

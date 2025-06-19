@@ -22,7 +22,6 @@
     owner: root
     group: root
     mode: '0644'
-    backup: yes
   when: apt_repo_path is defined and apt_repo_path != ""
 
 - name: debian | 更新 repo 缓存
@@ -31,7 +30,7 @@
 
 - name: debian | 安装基础软件包
   apt:
-    name: "{{ apt_packages }}"
+    name: "{{ apt_base_packages }}"
     state: present
     update_cache: yes
 

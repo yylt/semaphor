@@ -9,7 +9,7 @@
   - ansible_os_family == 'RedHat' 
 
 - name: Configure SSH client settings
-  ansible.builtin.lineinfile:
+  lineinfile:
     path: /etc/ssh/ssh_config
     regexp: "^{{ item.regexp }}" 
     line: "{{ item.line }}"     

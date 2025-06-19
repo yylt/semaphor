@@ -1,21 +1,59 @@
 
 # apt mirror
-apt_repo_path: ""
-
 mirror_apt_url: "http://mirrors.ustc.edu.cn/{{ apt_repo_path }}/" 
 mirror_apt_distro: "{{ ansible_distribution_release }}" # 或 bionic, focal, etc.
 
 
 # apt packages
-apt_packages:
+apt_base_packages:
   - apt-transport-https
   - ca-certificates
+  - bash-completion
+  - software-properties-common
   - curl
   - vim
   - git
+  - wget
   - net-tools
   - iproute2
   - python3-pip
+  - rsync
+  - sshpass
+  - sysstat
+  - make
+  - gcc
+  - build-essential
+  - ethtool
+  - libpcre3 
+  - libpcre3-dev 
+  - zlib1g 
+  - zlib1g-dev 
+  - libssl-dev 
+  - libmaxminddb-dev 
+  - bpfcc-tools 
+  - libbpfcc 
+  - libbpfcc-dev 
+
+apt_ui_packages:
+  - kdeconnect
+
+yum_base_packages:
+  - epel-release
+  - bash-completion
+  - vim
+  - git
+  - wget
+  - net-tools
+  - iproute
+  - python3-pip
+  - rsync
+  - sshpass
+  - sysstat
+  - make
+  - glibc-devel
+  - gcc
+  - gcc-c++
+  - ethtool
 
 # custom yum repo 配置
 roller_repo_url: ""

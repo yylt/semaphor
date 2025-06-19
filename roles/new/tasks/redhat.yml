@@ -51,6 +51,11 @@
 - name: redhat | 更新 repo 缓存
   command: "dnf makecache"
 
+- name: redhat | 安装基础软件
+  yum:
+    name: "{{ yum_base_packages }}"
+    state: present
+
 - name: 临时关闭 SELinux 
   command: setenforce 0
   tags: [selinux]
@@ -64,4 +69,3 @@
     owner: root
     group: root
     mode: '0644'
-    backup: yes   
