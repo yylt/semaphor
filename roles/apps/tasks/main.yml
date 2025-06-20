@@ -6,7 +6,25 @@
   with_items:
   - "{{ signkey_dir }}"
   - "{{ applications_dir }}"
+  - "{{ icons_dir}}"
 
 - include_tasks: appimage.yml
-  with_items: "{{ appimages | default([]) }}"
-  
+  when: apps_base_url is defined and apps_base_url != ''
+  with_items: "{{ custom_appimages | default([]) }}"
+
+- include_tasks: appimage.yml
+  when: github_proxy_url is defined and github_proxy_url != ''
+  with_items: "{{ github_appimages | default([]) }}"
+
+- include_tasks: repo.yml
+  with_items: "{{ apt_repos | default([]) }}"
+  when: ansible_os_family in ['Debian', 'Ubuntu']
+
+- name: Install packages
+  apt:
+    name: "{{ apt_ui_packages }}"
+    state: present
+    update_cache: yes
+  when: 
+  - install_ui_packages is defined and install_ui_packages == true
+  - ansible_os_family in ['Debian', 'Ubuntu']

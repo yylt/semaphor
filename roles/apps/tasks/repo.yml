@@ -1,0 +1,29 @@
+---
+- name: Set fact apt_repo_file
+  set_fact:
+    apt_repo_file: "/etc/apt/sources.list.d/{{ item.name }}.list"
+
+- name: Check if apt repository file already exists
+  ansible.builtin.stat:
+    path: "{{ apt_repo_file }}"
+  register: apt_repo_files_status
+
+- name: Remove apt keyring file 
+  file:
+    path: "{{ signkey_dir }}/{{ item.name }}-keyring.gpg"
+    state: absent
+
+- name: Download APT repository signing keys
+  shell: |
+    curl -fsSL {{ item.signkey_url }} | gpg --dearmor -o {{ signkey_dir }}/{{ item.name }}-keyring.gpg
+  when:
+    - apt_repo_files_status.stat.exists == false
+
+- name: Add APT repositories to sources.list.d
+  copy:
+    content: |
+      deb [signed-by={{ signkey_dir }}/{{ item.name }}-keyring.gpg] {{ item.deb_url }}
+    dest: "{{ apt_repo_file}}"
+    mode: '0644'
+  when:
+    - apt_repo_files_status.stat.exists == false

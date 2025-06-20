@@ -14,7 +14,8 @@ apt_repos:
 
 # appimages to install
 applications_dir: "/usr/local/share/applications"
-appimages:
+icons_dir: "/usr/local/share/icons"
+custom_appimages:
 - name: "qqmusic"
   url: "{{ apps_base_url }}/qqmusic.AppImage"
 - name: "drawio"
@@ -27,13 +28,18 @@ appimages:
   url: "{{ apps_base_url }}/qbittorrent.AppImage"
 - name: "balena-etcher"
   url: "{{ apps_base_url }}/balenaEtcher.AppImage"
+
+github_appimages:
 - name: "tabby"
   url: "{{ github_proxy_url }}https://github.com/Eugeny/tabby/releases/download/v1.0.223/tabby-1.0.223-linux-x64.AppImage"
-# - name: "joplin"
-#   url: "{{ github_proxy_url }}https://github.com/laurent22/joplin/releases/download/v3.3.13/Joplin-3.3.13.AppImage"
-
+- name: "joplin"
+  url: "{{ github_proxy_url }}https://github.com/laurent22/joplin/releases/download/v3.3.13/Joplin-3.3.13.AppImage"
+- name: "vlc"
+  url: "{{ github_proxy_url }}https://github.com/cmatomic/VLCplayer-AppImage/releases/download/3.0.11.1/VLC_media_player-3.0.11.1-x86_64.AppImage"
   
 # packages to install
+install_ui_packages: false
+
 apt_ui_packages:
   - firefox 
   - firefox-l10n-zh-CN
@@ -41,12 +47,7 @@ apt_ui_packages:
   - flameshot
   - gimp
   - kdeconnect
-  - vlc
-  - vlc-plugin-access-extra
-  - vlc-plugin-qt
-  - vlc-plugin-samba
   - gigolo
   - terminator
   - plank
-  - libconfig-dev 
   - locales

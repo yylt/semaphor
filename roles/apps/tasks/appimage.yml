@@ -7,14 +7,12 @@
 - name: Set fact for the temporary directory path
   set_fact:
     temporary_download_dir: "{{ mktemp_result.stdout | trim }}"
-  when: "{{ item.url | lower | regex_search('^https://') }}"
 
 - name: Download AppImage
   get_url:
     url: "{{ item.url }}"
     dest: "{{ temporary_download_dir }}/{{ item.name }}.AppImage"
     mode: '0755'
-  when: "{{ item.url | lower | regex_search('^https://') }}"
 
 - name: Mount AppImage to extract contents (requires FUSE)
   ansible.builtin.command: >
@@ -22,7 +20,7 @@
   args:
     chdir: "{{ temporary_download_dir }}"
     creates: "{{ temporary_download_dir }}/squashfs-root" 
-  when: "{{ item.url | lower | regex_search('^https://') }}"
+
 - name: Find .desktop file within extracted content
   ansible.builtin.find:
     paths: "{{ temporary_download_dir }}/squashfs-root"
@@ -30,13 +28,13 @@
     file_type: file
     recurse: false
   register: found_desktop_file
-  when: "{{ item.url | lower | regex_search('^https://') }}"
 
 - name: Copy .desktop file to applications directory
   ansible.builtin.copy:
     src: "{{ found_desktop_file.files[0].path }}"
     dest: "{{ applications_dir }}/{{ item.name }}.desktop"
     mode: '0644'
+    remote_src: true
   when: found_desktop_file is defined and found_desktop_file.files | length > 0
   register: copied_desktop_file_path
   
@@ -44,28 +42,22 @@
   ansible.builtin.lineinfile:
     path: "{{ applications_dir }}/{{ item.name }}.desktop"
     regexp: "^Exec="
-    line: "Exec={{ appimages_dir }}/{{ item.name }}.AppImage --no-sandbox %U"
+    line: "Exec={{ tool_dir }}/{{ item.name }}.AppImage --no-sandbox %U"
     state: present
     backrefs: true
   when: copied_desktop_file_path.changed or copied_desktop_file_path.dest is defined
 
 - name: Sync hicolor icons to system icons directory
-  ansible.builtin.synchronize:
+  ansible.builtin.copy:
     src: "{{ temporary_download_dir }}/squashfs-root/usr/share/icons/hicolor/" 
     dest: "/usr/share/icons/hicolor/"                   
-    mode: push                                                 
-    archive: yes                            
-    delete: no                                
-    recursive: yes          
-  become: true 
-  when: >
-    (temporary_download_dir + '/squashfs-root/usr/share/icons/hicolor/') is readable
-
+    remote_src: true         
+  become: true
 
 - name: Move AppImage to final destination
   ansible.builtin.copy:
-    src: "{{ temporary_download_dir }}/{{ current_appimage.expected_appimage_name }}"
-    dest: "{{ appimages_dir }}/{{ current_appimage.expected_appimage_name }}"
+    src: "{{ temporary_download_dir }}/{{ item.name }}.AppImage"
+    dest: "{{ tool_dir }}/{{ item.name }}.AppImage"
     mode: '0755'
     remote_src: true
     force: true 
