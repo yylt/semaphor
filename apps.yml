@@ -1,6 +1,4 @@
 - hosts: newhost
   roles:
   - default
-  - dns
-  - new
-  - tools
+  - apps

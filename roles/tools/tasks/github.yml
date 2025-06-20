@@ -1,0 +1,44 @@
+#github tool
+---
+- name: Create a unique temporary directory using mktemp
+  command: mktemp -d /tmp/ansible-XXXXXX 
+  register: mktemp_result
+
+- name: Set fact for the temporary directory path
+  set_fact:
+    temporary_dir: "{{ mktemp_result.stdout | trim }}"
+
+- name: Download the release archive
+  get_url:
+    url: "{{ github_proxy_url }}https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.package }}"
+    dest: "{{ temporary_dir }}/{{ item.package }}"
+    mode: '0644'
+    # force: true # Add force: true if you want to re-download even if file exists
+
+- name: Extract the archive
+  unarchive:
+    src: "{{ temporary_dir }}/{{ item.package }}"
+    dest: "{{ temporary_dir }}"
+    remote_src: true
+
+- name: Find the executable within the extracted directory
+  find:
+    paths: "{{ temporary_dir }}"
+    patterns: "{{ item.executable_name }}"
+    file_type: file
+    recurse: yes
+    depth: 2
+  register: found_executable
+
+- name: Copy the executable to {{ tool_dir }}
+  copy:
+    src: "{{ found_executable.files[0].path }}"
+    dest: "{{ tool_dir }}/" 
+    mode: '0755'
+    remote_src: true
+  when: found_executable.files is defined and found_executable.files | length > 0 
+
+- name: Clean up temporary directory
+  file:
+    path: "{{ temporary_dir }}"
+    state: absent

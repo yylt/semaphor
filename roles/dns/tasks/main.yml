@@ -2,7 +2,7 @@
 ---
 - name: 收集服务状态
   service_facts:
-
+  
 - name: 设置 NetworkManager.conf 中 [main] 块 dns
   ini_file:
     path: /etc/NetworkManager/NetworkManager.conf
@@ -22,15 +22,4 @@
     dest: "{{ dns_resolvconf_file }}"
   tags:
     - dns
-
-- name: 关闭 unattended-upgrades 服务
-  systemd:
-    name: unattended-upgrades
-    masked: yes
-    state: stopped
-  when:
-    - ansible_facts.services['unattended-upgrades.service'] is defined
-    - ansible_facts.services['unattended-upgrades.service'].state == 'running'
-
-
 

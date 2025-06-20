@@ -1,0 +1,13 @@
+---
+- name: 收集服务状态
+  service_facts:
+
+- name: 关闭服务
+  systemd:
+    name: "{{ item }}"
+    masked: yes
+    state: stopped
+  when:
+    - ansible_facts.services[item + '.service'] is defined
+    - ansible_facts.services[item + '.service'].state == 'running'
+  with_items: "{{ disable_services }}"

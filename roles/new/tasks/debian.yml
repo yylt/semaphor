@@ -33,20 +33,3 @@
     name: "{{ apt_base_packages }}"
     state: present
     update_cache: yes
-
-- name: 临时关闭 AppArmor 服务
-  service:
-    name: apparmor
-    state: stopped     
-  when:
-    - "'apparmor.service' in ansible_facts.services"
-    - ansible_facts.services['apparmor.service'].state == 'running' 
-  tags: [apparmor]
-
-- name: 永久关闭 AppArmor
-  service:
-    name: apparmor
-    enabled: no
-  when:
-    - "'apparmor.service' in ansible_facts.services" 
-  tags: [apparmor]

@@ -1,0 +1,25 @@
+
+
+# 准备语言
+lang_tools:
+- name: "node"
+  package: "node-v22.16.0-linux-{{ 'arm64' if ansible_architecture == 'aarch64' else 'x64' }}.tar.xz"
+  base_url: "https://npmmirror.com/mirrors/node/v22.16.0/"
+
+- name: "go"
+  package: "go1.24.4.linux-{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}.tar.gz"
+  base_url: "https://mirrors.aliyun.com/golang/"
+
+
+# 下载一些工具
+github_tools:
+- repo: google/go-containerregistry
+  version: v0.20.6
+  package: "go-containerregistry_Linux_{{ 'arm64' if ansible_architecture == 'aarch64' else 'x86_64' }}.tar.gz"
+  executable_name: "crane"
+  found: false
+
+- repo: astral-sh/uv
+  version: "0.7.13"
+  package: "uv-{{ ansible_architecture }}-unknown-linux-gnu.tar.gz"
+  executable_name: "uv"

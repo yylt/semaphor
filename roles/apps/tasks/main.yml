@@ -1,0 +1,12 @@
+---
+- name: Make directory 
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+  - "{{ signkey_dir }}"
+  - "{{ applications_dir }}"
+
+- include_tasks: appimage.yml
+  with_items: "{{ appimages | default([]) }}"
+  

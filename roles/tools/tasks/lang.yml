@@ -1,0 +1,29 @@
+---
+# --- Check and Install ---
+- name: Check if language is installed
+  shell: |
+    command -v "{{ item.name }}" >/dev/null 2>&1
+  register: check_status
+  changed_when: false
+  failed_when: false
+
+- name: Download tarball
+  get_url:
+    url: "{{ item.base_url }}{{ item.package }}"
+    dest: "{{ tmp_dir }}/{{ item.package }}"
+    mode: '0644'
+  when: check_status.rc != 0
+
+- name: Remove any existing installation directory (if incomplete or old)
+  file:
+    path: "/usr/local/{{ item.name }}"
+    state: absent
+  become: true
+  when: check_status.rc != 0
+
+- name: Extract tarball to install directory
+  unarchive:
+    src: "{{ tmp_dir }}/{{ item.package }}"
+    dest: "/usr/local"
+    remote_src: true 
+  when: check_status.rc != 0

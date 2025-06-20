@@ -21,7 +21,7 @@ apt_base_packages:
   - sshpass
   - sysstat
   - make
-  - gcc
+  - iptables
   - build-essential
   - ethtool
   - libpcre3 
@@ -33,9 +33,6 @@ apt_base_packages:
   - bpfcc-tools 
   - libbpfcc 
   - libbpfcc-dev 
-
-apt_ui_packages:
-  - kdeconnect
 
 yum_base_packages:
   - epel-release
@@ -50,9 +47,7 @@ yum_base_packages:
   - sshpass
   - sysstat
   - make
-  - glibc-devel
-  - gcc
-  - gcc-c++
+  - iptables
   - ethtool
 
 # custom yum repo 配置
@@ -63,3 +58,12 @@ roller_repo_name: "RollerRepo"
 custom_hosts: []
   # - ip: "192.168.1.100"
   #   hostname: "example.com"
+
+disable_services:
+  - firewalld
+  - unattended-upgrades
+  - apport
+  - apparmor
+  - snapd
+  - ModemManager
+  - ufw

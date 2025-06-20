@@ -1,0 +1,8 @@
+
+
+tool_dir: "/usr/local/bin"
+
+github_proxy_url: https://ghfast.top/
+
+# appimages base url
+apps_base_url: ""

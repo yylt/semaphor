@@ -20,3 +20,50 @@
     - { regexp: 'UserKnownHostsFile', line: 'UserKnownHostsFile /dev/null' }
     - { regexp: 'StrictHostKeyChecking', line: 'StrictHostKeyChecking no' }
     - { regexp: 'HashKnownHosts', line: 'HashKnownHosts no' }
+
+- name: 禁止services
+  import_tasks: disable_services.yml
+
+- name: Get list of users with /bin/bash shell
+  shell: |
+    awk -F: '/\/bin\/bash/ {print $6}' /etc/passwd
+  register: homes
+
+- name: Extract home directories 
+  set_fact:
+    target_homes: "{{ homes.stdout_lines  | select('match', '^(/root|/home).*') | list }}"
+
+
+- name: Create or update .proxy
+  copy:
+    content: |
+      export http_proxy=http://127.0.0.1:1080
+      export https_proxy=http://127.0.0.1:1080
+    dest: "{{ item }}/.proxy"
+    owner: "{{ item.split('/')[(-1)] }}"
+    group: "{{ item.split('/')[(-1)] }}"
+    mode: '0755'
+  with_items: "{{ target_homes }}"
+
+- name: Create or update .gitconfig
+  copy:
+    content: |
+      [core]
+        editor = "vim"
+    dest: "{{ item }}/.gitconfig"
+    owner: "{{ item.split('/')[(-1)] }}"
+    group: "{{ item.split('/')[(-1)] }}"
+    mode: '0644'
+  with_items: "{{ target_homes }}"
+
+- name: Create or update .vimrc
+  copy:
+    content: |
+      :syntax on
+      :set ts=4
+      :set hls
+    dest: "{{ item }}/.vimrc"
+    owner: "{{ item.split('/')[(-1)] }}"
+    group: "{{ item.split('/')[(-1)] }}"
+    mode: '0644'
+  with_items: "{{ target_homes }}"

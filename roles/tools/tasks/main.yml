@@ -1,0 +1,22 @@
+---
+- name: Create a unique temporary directory using mktemp
+  command: mktemp -d /tmp/ansible-XXXXXX 
+  register: mktemp_result
+
+- name: Set fact for the temporary directory path
+  set_fact:
+    tmp_dir: "{{ mktemp_result.stdout | trim }}"
+
+- include_tasks: lang.yml
+  with_items: "{{ lang_tools | default([]) }}"
+- include_tasks: github.yml
+  with_items: "{{ github_tools | default([]) }}"
+
+- import_tasks: env.yml
+
+- name: Clean up the temporary directory
+  file:
+    path: "{{ tmp_dir }}"
+    state: absent
+
+
