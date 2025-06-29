@@ -42,7 +42,7 @@ install_ui_packages: false
 
 apt_ui_packages:
   - firefox 
-  - firefox-l10n-zh-CN
+  - firefox-l10n-zh-cn
   - codium
   - flameshot
   - gimp

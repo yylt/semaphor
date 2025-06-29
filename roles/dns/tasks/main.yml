@@ -23,3 +23,5 @@
   tags:
     - dns
 
+- name: Ensure timezone is set to Asia/Shanghai
+  command: timedatectl set-timezone Asia/Shanghai
