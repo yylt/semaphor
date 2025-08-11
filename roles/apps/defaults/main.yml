@@ -46,6 +46,7 @@ apt_ui_packages:
   - codium
   - flameshot
   - gimp
+  - gedit
   - kdeconnect
   - gigolo
   - terminator
