@@ -33,6 +33,7 @@ apt_base_packages:
   - bpfcc-tools 
   - libbpfcc 
   - libbpfcc-dev 
+  - nftables
 
 yum_base_packages:
   - epel-release
@@ -49,6 +50,7 @@ yum_base_packages:
   - make
   - iptables
   - ethtool
+  - nftables
 
 # custom yum repo 配置
 roller_repo_url: ""
