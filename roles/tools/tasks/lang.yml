@@ -15,9 +15,9 @@
   when: check_status.rc != 0
 
 - name: Remove any existing installation directory (if incomplete or old)
-  file:
-    path: "/usr/local/{{ item.name }}"
-    state: absent
+  shell: |
+      rm -rf "/usr/local/{{ item.name }}" 
+      mkdir -p "/usr/local/{{ item.name }}"  
   become: true
   when: check_status.rc != 0
 
