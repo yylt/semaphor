@@ -1,0 +1,4 @@
+- hosts: runner
+  roles:
+  - default
+  - service

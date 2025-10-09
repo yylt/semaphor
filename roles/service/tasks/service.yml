@@ -1,0 +1,54 @@
+
+- name: Create destination directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items: 
+  - "/tmp/{{ item.src | basename | splitext | first }}"
+  - "{{ item.dest | dirname }}"
+- name: Download file to temp location
+  get_url:
+    url: "{{ item.src }}"
+    dest: "/tmp/{{ item.src | basename }}"
+    mode: '0644'
+
+- name: Extract file
+  unarchive:
+    src: "/tmp/{{ item.src | basename }}"
+    dest: "/tmp/{{ item.src | basename | splitext | first }}"
+    copy: no
+
+- name: Find matching file in extracted contents
+  find:
+    paths: "/tmp/{{ item.src | basename | splitext | first }}"
+    patterns: "{{ item.dest | basename }}"
+    file_type: file
+    recurse: yes
+  register: found_files
+
+- name: Copy matching file to destination
+  copy:
+    src: "{{ found_files.files[0].path }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+    remote_src: yes
+  when: 
+    - found_files.files | length > 0
+
+- name: Restart service if specified
+  systemd:
+    name: "{{ item.service }}"
+    state: restarted
+    enabled: yes
+  when: 
+    - item.service is defined
+    - item.service | length > 0
+
+- name: Cleanup temporary files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "/tmp/{{ item.src | basename }}"
+  - "/tmp/{{ item.src | basename | splitext | first }}"

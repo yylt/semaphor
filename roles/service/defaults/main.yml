@@ -1,0 +1,6 @@
+
+
+update_services:
+- src: "https://github.com/EasyTier/EasyTier/releases/download/v2.4.5/easytier-linux-{{ ansible_architecture }}-v2.4.5.zip"
+  dest: /opt/easytier/easytier-core
+  service: et
