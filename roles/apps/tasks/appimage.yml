@@ -1,22 +1,26 @@
 # deploy single
 ---
 - name: Temporary directory using mktemp
-  command: mktemp -d /tmp/ansible-XXXXXX 
+  ansible.builtin.command: mktemp -d /tmp/ansible-XXXXXX 
   register: mktemp_result
 
 - name: Set fact for the temporary directory path
   set_fact:
     temporary_download_dir: "{{ mktemp_result.stdout | trim }}"
 
-- name: Download AppImage
-  get_url:
-    url: "{{ item.url }}"
-    dest: "{{ temporary_download_dir }}/{{ item.name }}.AppImage"
-    mode: '0755'
+- name: Extract filename without extension
+  ansible.builtin.set_fact:
+    appimage_name: "{{ item | basename | regex_replace('\\.AppImage$', '') }}"
 
+- name: Ensure AppImage is executable
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0755'
+    state: file
+    
 - name: Mount AppImage to extract contents (requires FUSE)
   ansible.builtin.command: >
-    {{ temporary_download_dir }}/{{ item.name }}.AppImage --appimage-extract
+    {{ item }} --appimage-extract
   args:
     chdir: "{{ temporary_download_dir }}"
     creates: "{{ temporary_download_dir }}/squashfs-root" 
@@ -32,7 +36,7 @@
 - name: Copy .desktop file to applications directory
   ansible.builtin.copy:
     src: "{{ found_desktop_file.files[0].path }}"
-    dest: "{{ applications_dir }}/{{ item.name }}.desktop"
+    dest: "{{ applications_dir }}/{{ appimage_name }}.desktop"
     mode: '0644'
     remote_src: true
   when: found_desktop_file is defined and found_desktop_file.files | length > 0
@@ -40,9 +44,9 @@
   
 - name: Update Exec path in .desktop file
   ansible.builtin.lineinfile:
-    path: "{{ applications_dir }}/{{ item.name }}.desktop"
+    path: "{{ applications_dir }}/{{ appimage_name }}.desktop"
     regexp: "^Exec="
-    line: "Exec={{ tool_dir }}/{{ item.name }}.AppImage --no-sandbox %U"
+    line: "Exec={{ tool_dir }}/{{ appimage_name }}.AppImage --no-sandbox %U"
     state: present
     backrefs: true
   when: copied_desktop_file_path.changed or copied_desktop_file_path.dest is defined
@@ -56,14 +60,14 @@
 
 - name: Move AppImage to final destination
   ansible.builtin.copy:
-    src: "{{ temporary_download_dir }}/{{ item.name }}.AppImage"
-    dest: "{{ tool_dir }}/{{ item.name }}.AppImage"
+    src: "{{ item }}"
+    dest: "{{ tool_dir }}/"
     mode: '0755'
     remote_src: true
     force: true 
   when: copied_desktop_file_path.changed
   
 - name: Clean up temporary directory
-  file:
+  ansible.builtin.file:
     path: "{{ temporary_download_dir }}"
     state: absent

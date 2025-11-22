@@ -1,6 +1,6 @@
 ---
 - name: Make directory 
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
   with_items:
@@ -8,13 +8,21 @@
   - "{{ applications_dir }}"
   - "{{ icons_dir}}"
 
-- include_tasks: appimage.yml
-  when: apps_base_url is defined and apps_base_url != ''
-  with_items: "{{ custom_appimages | default([]) }}"
+- name: Find all AppImage files in app_base_dir
+  ansible.builtin.find:
+    paths: "{{ app_base_dir }}"
+    patterns: "*.AppImage"
+    file_type: file
+  register: found_appimages
+  when: apps_base_dir is defined and apps_base_dir != ''
+
+- name: Set facts for AppImage processing
+  ansible.builtin.set_fact:
+    appimage_items: "{{ found_appimages.files | map(attribute='path') | list }}"
+  when: apps_base_dir is defined and apps_base_dir != ''
 
 - include_tasks: appimage.yml
-  when: github_proxy_url is defined and github_proxy_url != ''
-  with_items: "{{ github_appimages | default([]) }}"
+  with_items: "{{ appimage_items | default([]) }}"
 
 - include_tasks: repo.yml
   with_items: "{{ apt_repos | default([]) }}"
