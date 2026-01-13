@@ -1,0 +1,87 @@
+---
+# NUMA detection and caching task
+- name: Check if numactl is installed
+  command: which numactl
+  register: numactl_check
+  changed_when: false
+  failed_when: false
+
+- name: Install numactl if not present (Debian/Ubuntu)
+  apt:
+    name: numactl
+    state: present
+    update_cache: yes
+  when:
+    - numactl_check.rc != 0
+    - ansible_os_family in ['Debian', 'Ubuntu']
+
+- name: Install numactl if not present (RedHat/CentOS)
+  yum:
+    name: numactl
+    state: present
+  when:
+    - numactl_check.rc != 0
+    - ansible_os_family == 'RedHat'
+
+- name: Detect NUMA node count
+  shell: |
+    numactl --hardware | grep "available:" | awk '{print $2}'
+  register: numa_node_count_raw
+  changed_when: false
+
+- name: Set NUMA node count fact
+  set_fact:
+    numa_node_count: "{{ numa_node_count_raw.stdout | int }}"
+
+- name: Detect NUMA nodes information
+  shell: |
+    numactl --hardware | grep "node [0-9]* cpus:" | sed 's/node \([0-9]*\) cpus: \(.*\)/\1:\2/'
+  register: numa_nodes_cpus_raw
+  changed_when: false
+
+- name: Parse NUMA CPU information
+  set_fact:
+    numa_nodes_info: >-
+      {{
+        numa_nodes_info | default({}) | combine({
+          item.split(':')[0]: {
+            'node_id': item.split(':')[0],
+            'cpus': item.split(':')[1] | trim
+          }
+        })
+      }}
+  loop: "{{ numa_nodes_cpus_raw.stdout_lines }}"
+
+- name: Detect NUMA memory information
+  shell: |
+    numactl --hardware | grep "node [0-9]* size:" | sed 's/node \([0-9]*\) size: \([0-9]*\) MB/\1:\2/'
+  register: numa_nodes_memory_raw
+  changed_when: false
+
+- name: Combine NUMA memory information
+  set_fact:
+    numa_nodes_info: >-
+      {{
+        numa_nodes_info | combine({
+          item.split(':')[0]: numa_nodes_info[item.split(':')[0]] | combine({
+            'memory_mb': item.split(':')[1] | int
+          })
+        }, recursive=True)
+      }}
+  loop: "{{ numa_nodes_memory_raw.stdout_lines }}"
+
+- name: Cache NUMA information to file
+  copy:
+    content: |
+      # NUMA Information Cache
+      # Generated at {{ ansible_date_time.iso8601 }}
+      numa_node_count: {{ numa_node_count }}
+      numa_nodes_info: {{ numa_nodes_info | to_nice_yaml(indent=2) }}
+    dest: "/etc/ansible_numa_cache.yml"
+    mode: '0644'
+
+- name: Display detected NUMA information
+  debug:
+    msg: |
+      NUMA Nodes: {{ numa_node_count }}
+      NUMA Info: {{ numa_nodes_info | to_nice_json }}

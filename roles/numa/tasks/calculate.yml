@@ -1,0 +1,117 @@
+---
+# Calculate NUMA configuration based on memory requirement
+# This task should be included with: include_tasks: roles/numa/tasks/calculate.yml
+# Required variables:
+#   - required_memory_mb: Maximum memory requirement in MB (optional, for node selection)
+#   - numa_node_threshold: Minimum NUMA nodes to enable NUMA binding (default: 2)
+
+- name: Load cached NUMA information
+  include_vars:
+    file: /etc/ansible_numa_cache.yml
+    name: numa_cache
+  ignore_errors: true
+  register: numa_cache_load
+
+- name: Fail if NUMA cache not found
+  fail:
+    msg: "NUMA cache not found. Please run numa role first to detect and cache NUMA information."
+  when: numa_cache_load is failed
+
+- name: Set NUMA facts from cache
+  set_fact:
+    numa_node_count: "{{ numa_cache.numa_node_count }}"
+    numa_nodes_info: "{{ numa_cache.numa_nodes_info }}"
+
+- name: Set default NUMA node threshold
+  set_fact:
+    numa_node_threshold: "{{ numa_node_threshold | default(2) }}"
+
+- name: Check if NUMA binding is needed
+  set_fact:
+    numa_binding_enabled: "{{ (numa_node_count | int) >= (numa_node_threshold | int) }}"
+
+- name: Display NUMA binding decision
+  debug:
+    msg: |
+      NUMA nodes detected: {{ numa_node_count }}
+      NUMA binding threshold: {{ numa_node_threshold }}
+      NUMA binding enabled: {{ numa_binding_enabled }}
+
+- name: Clear NUMA configuration variables
+  set_fact:
+    numa_cpuaffinity: ""
+    numa_policy: ""
+    selected_numa_node: ""
+    numa_config_enabled: false
+  when: not numa_binding_enabled
+
+- name: Display skip message
+  debug:
+    msg: "NUMA binding disabled: only {{ numa_node_count }} node(s) detected (threshold: {{ numa_node_threshold }})"
+  when: not numa_binding_enabled
+
+- name: Find suitable NUMA nodes for memory requirement
+  set_fact:
+    suitable_numa_nodes: >-
+      {{
+        suitable_numa_nodes | default([]) + [item.key]
+      }}
+  with_items: "{{ numa_nodes_info | dict2items }}"
+  when:
+    - numa_binding_enabled
+    - required_memory_mb is defined
+    - item.value.memory_mb >= (required_memory_mb | int)
+
+- name: Select best NUMA node
+  set_fact:
+    selected_numa_node: >-
+      {% if required_memory_mb is defined and suitable_numa_nodes | default([]) | length > 0 %}
+      {{ suitable_numa_nodes[0] }}
+      {% else %}
+      0
+      {% endif %}
+  when: numa_binding_enabled
+
+- name: Get selected node information
+  set_fact:
+    selected_numa_cpus: "{{ numa_nodes_info[selected_numa_node].cpus }}"
+    selected_numa_memory_mb: "{{ numa_nodes_info[selected_numa_node].memory_mb }}"
+  when: numa_binding_enabled
+
+- name: Set NUMA configuration for systemd
+  set_fact:
+    numa_cpuaffinity: "{{ selected_numa_cpus }}"
+    numa_policy: "bind"
+    numa_config_enabled: true
+  when: numa_binding_enabled
+
+- name: Display calculated NUMA configuration
+  debug:
+    msg: |
+      NUMA Configuration Enabled: YES
+      Selected NUMA Node: {{ selected_numa_node }}
+      CPUAffinity: {{ numa_cpuaffinity }}
+      NUMAPolicy: {{ numa_policy }}
+      Available Memory: {{ selected_numa_memory_mb }}MB
+      {% if required_memory_mb is defined %}Required Memory: {{ required_memory_mb }}MB{% endif %}
+  when: numa_binding_enabled
+
+- name: Warn if no suitable NUMA node found
+  debug:
+    msg: "WARNING: No NUMA node has enough memory ({{ required_memory_mb }}MB required). Using node 0."
+  when:
+    - numa_binding_enabled
+    - required_memory_mb is defined
+    - suitable_numa_nodes | default([]) | length == 0
+
+- name: Summary of NUMA configuration variables
+  debug:
+    msg: |
+      Use these variables in your systemd service:
+      {% if numa_config_enabled %}
+      [Service]
+      CPUAffinity={{ numa_cpuaffinity }}
+      NUMAPolicy={{ numa_policy }}
+      {% else %}
+      NUMA binding is disabled (not enough nodes)
+      {% endif %}

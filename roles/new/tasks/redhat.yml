@@ -59,8 +59,10 @@
 - name: 临时关闭 SELinux 
   command: setenforce 0
   tags: [selinux]
+  ignore_errors: true
 
 - name: 永久关闭 SELinux 
+  ignore_errors: true
   lineinfile:
     path: /etc/selinux/config
     regexp: '^SELINUX='     

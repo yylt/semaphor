@@ -1,0 +1,121 @@
+---
+# Example playbook demonstrating NUMA role usage
+# Usage: ansible-playbook -i inventory/inventory.ini numa_example.yml
+
+- name: Example 1 - Detect NUMA topology
+  hosts: runner
+  tasks:
+    - name: Run NUMA detection
+      include_role:
+        name: numa
+
+    - name: Display cached NUMA information
+      command: cat /etc/ansible_numa_cache.yml
+      register: numa_cache_content
+      changed_when: false
+
+    - name: Show NUMA cache
+      debug:
+        msg: "{{ numa_cache_content.stdout_lines }}"
+
+- name: Example 2 - Calculate NUMA configuration
+  hosts: runner
+  tasks:
+    # Ensure NUMA info is available
+    - name: Load NUMA information
+      include_role:
+        name: numa
+
+    # Calculate NUMA configuration for 4GB service
+    - name: Calculate NUMA for example service (4GB)
+      include_tasks: roles/numa/tasks/calculate.yml
+      vars:
+        required_memory_mb: 4096
+
+    - name: Display NUMA configuration variables
+      debug:
+        msg: |
+          NUMA Configuration:
+          - Enabled: {{ numa_config_enabled }}
+          - CPUAffinity: {{ numa_cpuaffinity }}
+          - NUMAPolicy: {{ numa_policy }}
+          - Selected Node: {{ selected_numa_node }}
+
+- name: Example 3 - Test boundary conditions
+  hosts: runner
+  tasks:
+    - name: Ensure NUMA detection
+      include_role:
+        name: numa
+
+    # Test with threshold = 1 (should enable NUMA even on single-node)
+    - name: Calculate with threshold=1
+      include_tasks: roles/numa/tasks/calculate.yml
+      vars:
+        numa_node_threshold: 1
+
+    - name: Show result with threshold=1
+      debug:
+        msg: "NUMA enabled with threshold=1: {{ numa_config_enabled }}"
+
+    # Test with threshold = 4 (should disable NUMA on systems with < 4 nodes)
+    - name: Calculate with threshold=4
+      include_tasks: roles/numa/tasks/calculate.yml
+      vars:
+        numa_node_threshold: 4
+
+    - name: Show result with threshold=4
+      debug:
+        msg: "NUMA enabled with threshold=4: {{ numa_config_enabled }}"
+
+- name: Example 4 - Use NUMA in service deployment
+  hosts: runner
+  tasks:
+    - name: Ensure NUMA information
+      include_role:
+        name: numa
+
+    - name: Calculate NUMA for test service
+      include_tasks: roles/numa/tasks/calculate.yml
+      vars:
+        required_memory_mb: 2048
+
+    - name: Create test service with NUMA configuration
+      copy:
+        content: |
+          [Unit]
+          Description=NUMA Test Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/bin/sleep 3600
+          {% if numa_config_enabled | default(false) %}
+          # NUMA Configuration
+          CPUAffinity={{ numa_cpuaffinity }}
+          NUMAPolicy={{ numa_policy }}
+          {% endif %}
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/numa-test.service
+        mode: '0644'
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Show generated service file
+      command: cat /etc/systemd/system/numa-test.service
+      register: service_content
+      changed_when: false
+
+    - name: Display service file
+      debug:
+        msg: "{{ service_content.stdout_lines }}"
+
+    - name: Clean up test service
+      file:
+        path: /etc/systemd/system/numa-test.service
+        state: absent
