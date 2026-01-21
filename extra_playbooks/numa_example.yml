@@ -10,13 +10,25 @@
         name: numa
 
     - name: Display cached NUMA information
-      command: cat /etc/ansible_numa_cache.yml
+      command: cat /etc/ansible_numa_cache.json
       register: numa_cache_content
       changed_when: false
 
     - name: Show NUMA cache
       debug:
         msg: "{{ numa_cache_content.stdout_lines }}"
+
+    - name: Parse NUMA cache JSON
+      slurp:
+        src: /etc/ansible_numa_cache.json
+      register: numa_cache_slurp
+      changed_when: false
+
+    - name: Show parsed NUMA ordering details
+      debug:
+        msg: >
+          Preferred order: {{ (numa_cache_slurp.content | b64decode | from_json).numa_nodes_preferred_order }}
+          | Total nodes: {{ (numa_cache_slurp.content | b64decode | from_json).numa_node_count }}
 
 - name: Example 2 - Calculate NUMA configuration
   hosts: runner
@@ -28,18 +40,46 @@
 
     # Calculate NUMA configuration for 4GB service
     - name: Calculate NUMA for example service (4GB)
-      include_tasks: roles/numa/tasks/calculate.yml
+      include_tasks: ../roles/numa/tasks/calculate.yml
       vars:
         required_memory_mb: 4096
+
+    - name: Capture NUMA result for 4GB service
+      set_fact:
+        numa_result_4gb:
+          enabled: "{{ numa_config_enabled }}"
+          cpus: "{{ numa_cpuaffinity }}"
+          policy: "{{ numa_policy }}"
+          node: "{{ selected_numa_node | default('') }}"
+
+    # Calculate NUMA configuration for an oversize requirement to trigger empty selection
+    - name: Calculate NUMA for oversized example service (128GB)
+      include_tasks: ../roles/numa/tasks/calculate.yml
+      vars:
+        required_memory_mb: 131072
+
+    - name: Capture NUMA result for oversized requirement
+      set_fact:
+        numa_result_oversized:
+          enabled: "{{ numa_config_enabled }}"
+          cpus: "{{ numa_cpuaffinity }}"
+          policy: "{{ numa_policy }}"
+          node: "{{ selected_numa_node | default('') }}"
 
     - name: Display NUMA configuration variables
       debug:
         msg: |
-          NUMA Configuration:
-          - Enabled: {{ numa_config_enabled }}
-          - CPUAffinity: {{ numa_cpuaffinity }}
-          - NUMAPolicy: {{ numa_policy }}
-          - Selected Node: {{ selected_numa_node }}
+          NUMA Configuration (4GB requirement):
+          - Enabled: {{ numa_result_4gb.enabled }}
+          - CPUAffinity: {{ numa_result_4gb.cpus }}
+          - NUMAPolicy: {{ numa_result_4gb.policy }}
+          - Selected Node: {{ numa_result_4gb.node }}
+
+          NUMA Configuration (128GB requirement; expect unset):
+          - Enabled: {{ numa_result_oversized.enabled }}
+          - CPUAffinity: {{ numa_result_oversized.cpus or 'n/a' }}
+          - NUMAPolicy: {{ numa_result_oversized.policy or 'n/a' }}
+          - Selected Node: {{ numa_result_oversized.node or 'none' }}
 
 - name: Example 3 - Test boundary conditions
   hosts: runner
@@ -48,9 +88,10 @@
       include_role:
         name: numa
 
+    # Default threshold is 4. Override to 1 to force-enable binding even on single node systems.
     # Test with threshold = 1 (should enable NUMA even on single-node)
     - name: Calculate with threshold=1
-      include_tasks: roles/numa/tasks/calculate.yml
+      include_tasks: ../roles/numa/tasks/calculate.yml
       vars:
         numa_node_threshold: 1
 
@@ -58,9 +99,9 @@
       debug:
         msg: "NUMA enabled with threshold=1: {{ numa_config_enabled }}"
 
-    # Test with threshold = 4 (should disable NUMA on systems with < 4 nodes)
+    # Threshold = 4 matches the new default (requires >=4 nodes to enable binding)
     - name: Calculate with threshold=4
-      include_tasks: roles/numa/tasks/calculate.yml
+      include_tasks: ../roles/numa/tasks/calculate.yml
       vars:
         numa_node_threshold: 4
 
@@ -76,7 +117,7 @@
         name: numa
 
     - name: Calculate NUMA for test service
-      include_tasks: roles/numa/tasks/calculate.yml
+      include_tasks: ../roles/numa/tasks/calculate.yml
       vars:
         required_memory_mb: 2048
 

@@ -82,14 +82,16 @@
         | list
       }}
 
+- name: Assemble NUMA cache payload
+  set_fact:
+    numa_cache_data:
+      generated_at: "{{ ansible_date_time.iso8601 }}"
+      numa_node_count: "{{ numa_node_count }}"
+      numa_nodes_info: "{{ numa_nodes_info }}"
+      numa_nodes_preferred_order: "{{ numa_nodes_preferred_order }}"
+
 - name: Cache NUMA information to file
   copy:
-    content: |
-      # NUMA Information Cache
-      # Generated at {{ ansible_date_time.iso8601 }}
-      numa_node_count: {{ numa_node_count }}
-      numa_nodes_info: {{ numa_nodes_info | to_nice_yaml(indent=2) }}
-      numa_nodes_preferred_order: {{ numa_nodes_preferred_order | to_nice_yaml(indent=2) }}
-    dest: "/etc/ansible_numa_cache.yml"
+    content: "{{ numa_cache_data | to_nice_json }}"
+    dest: "{{ numa_cache_file }}"
     mode: '0644'
-

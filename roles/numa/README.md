@@ -5,7 +5,7 @@ This Ansible role detects NUMA (Non-Uniform Memory Access) topology on Linux sys
 ## Features
 
 1. **NUMA Detection**: Automatically detects NUMA nodes, CPU assignments, and memory availability
-2. **Information Caching**: Caches NUMA topology to `/etc/ansible_numa_cache.yml` for reuse
+2. **Information Caching**: Caches NUMA topology to `/etc/ansible_numa_cache.json` for reuse
 3. **Smart Allocation**: Calculates optimal NUMA node based on memory requirements
 4. **Boundary Handling**: Only enables NUMA binding when node count meets threshold (default: 2)
 5. **Variable Export**: Provides `numa_cpuaffinity` and `numa_policy` for systemd service configuration
@@ -53,7 +53,7 @@ First, run the role to detect and cache NUMA topology:
 This will:
 - Install `numactl` if not present
 - Detect NUMA node count, CPU assignments, and memory
-- Cache information to `/etc/ansible_numa_cache.yml`
+- Cache information to `/etc/ansible_numa_cache.json`
 
 ### 2. Calculate NUMA Configuration in Your Service Role
 
@@ -199,7 +199,7 @@ No input variables required. Outputs:
 ### Default Variables
 
 **roles/numa/defaults/main.yml:**
-- `numa_cache_file`: `/etc/ansible_numa_cache.yml` - Cache location
+- `numa_cache_file`: `/etc/ansible_numa_cache.json` - Cache location
 - `numa_node_threshold`: `2` - Minimum nodes to enable NUMA binding
 
 ## How It Works
@@ -275,7 +275,7 @@ This configuration:
 
 - NUMA binding is only enabled when node count >= threshold (default: 2)
 - Single-node systems automatically skip NUMA configuration
-- NUMA cache is stored in `/etc/ansible_numa_cache.yml`
+- NUMA cache is stored in `/etc/ansible_numa_cache.json`
 - Each service role should include its own systemd service template
 - Use `numa_config_enabled` to conditionally apply NUMA settings
 
@@ -284,7 +284,7 @@ This configuration:
 **Check NUMA topology:**
 ```bash
 numactl --hardware
-cat /etc/ansible_numa_cache.yml
+cat /etc/ansible_numa_cache.json
 ```
 
 **Verify service NUMA binding:**

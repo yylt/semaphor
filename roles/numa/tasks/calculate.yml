@@ -5,17 +5,20 @@
 #   - required_memory_mb: Maximum memory requirement in MB (optional, for node selection)
 #   - numa_node_threshold: Minimum NUMA nodes to enable NUMA binding (default: 2)
 
-- name: Load cached NUMA information
-  include_vars:
-    file: /etc/ansible_numa_cache.yml
-    name: numa_cache
+- name: Load cached NUMA information from managed host
+  slurp:
+    src: "/etc/ansible_numa_cache.json"
+  register: numa_cache_slurp
   ignore_errors: true
-  register: numa_cache_load
 
 - name: Fail if NUMA cache not found
   fail:
     msg: "NUMA cache not found. Please run numa role first to detect and cache NUMA information."
-  when: numa_cache_load is failed
+  when: numa_cache_slurp is failed
+
+- name: Parse NUMA cache content
+  set_fact:
+    numa_cache: "{{ numa_cache_slurp.content | b64decode | from_json }}"
 
 - name: Set NUMA facts from cache
   set_fact:
@@ -94,8 +97,8 @@
 
 - name: Get selected node information
   set_fact:
-    selected_numa_cpus: "{{ numa_nodes_info[selected_numa_node].cpus }}"
-    selected_numa_memory_mb: "{{ numa_nodes_info[selected_numa_node].memory_mb }}"
+    selected_numa_cpus: "{{ numa_nodes_info[selected_numa_node| trim].cpus }}"
+    selected_numa_memory_mb: "{{ numa_nodes_info[selected_numa_node| trim].memory_mb }}"
   when:
     - numa_binding_enabled
     - selected_numa_node | length > 0

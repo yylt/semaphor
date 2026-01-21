@@ -98,7 +98,7 @@ Update pattern (roles/service/tasks/service.yml):
 #### 6. **numa** (NUMA Configuration Provider)
 Located in `roles/numa/`, provides NUMA topology detection and configuration variables for service roles:
 - **NUMA detection**: Detects NUMA nodes, CPU assignments, and memory using `numactl` (roles/numa/tasks/main.yml)
-- **Information caching**: Caches topology to `/etc/ansible_numa_cache.yml` for reuse
+- **Information caching**: Caches topology to `/etc/ansible_numa_cache.json` for reuse
 - **Smart allocation**: Calculates optimal NUMA node based on memory requirements (roles/numa/tasks/calculate.yml)
 - **Variable export**: Provides `numa_cpuaffinity` and `numa_policy` for use in service templates
 
@@ -155,7 +155,7 @@ NUMAPolicy={{ numa_policy }}
 - `update_services`: List of services to update with source URLs and destinations
 
 **NUMA role** (roles/numa/defaults/main.yml):
-- `numa_cache_file`: `/etc/ansible_numa_cache.yml` - NUMA topology cache location
+- `numa_cache_file`: `/etc/ansible_numa_cache.json` - NUMA topology cache location
 - `numa_node_threshold`: `2` - Minimum NUMA nodes to enable binding (default: 2)
 
 ### Architecture Patterns
