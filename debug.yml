@@ -1,5 +1,5 @@
 - name: Collect and display facts
-  hosts: newhost 
+  hosts: debug
   gather_facts: yes 
   tasks:
     - name: Display facts

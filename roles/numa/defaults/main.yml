@@ -6,4 +6,4 @@ numa_cache_file: "/etc/ansible_numa_cache.yml"
 
 # Minimum NUMA nodes required to enable NUMA binding
 # If node count is less than this threshold, NUMA binding will be disabled
-numa_node_threshold: 2
+numa_node_threshold: 4

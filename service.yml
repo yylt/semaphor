@@ -1,4 +1,4 @@
-- hosts: runner
+- hosts: newhost
   roles:
   - default
   - service

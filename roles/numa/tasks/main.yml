@@ -70,6 +70,18 @@
       }}
   loop: "{{ numa_nodes_memory_raw.stdout_lines }}"
 
+- name: Determine preferred NUMA node order
+  set_fact:
+    numa_nodes_preferred_order: >-
+      {{
+        numa_nodes_info.keys()
+        | list
+        | map('int')
+        | sort(reverse=True)
+        | map('string')
+        | list
+      }}
+
 - name: Cache NUMA information to file
   copy:
     content: |
@@ -77,11 +89,7 @@
       # Generated at {{ ansible_date_time.iso8601 }}
       numa_node_count: {{ numa_node_count }}
       numa_nodes_info: {{ numa_nodes_info | to_nice_yaml(indent=2) }}
+      numa_nodes_preferred_order: {{ numa_nodes_preferred_order | to_nice_yaml(indent=2) }}
     dest: "/etc/ansible_numa_cache.yml"
     mode: '0644'
 
-- name: Display detected NUMA information
-  debug:
-    msg: |
-      NUMA Nodes: {{ numa_node_count }}
-      NUMA Info: {{ numa_nodes_info | to_nice_json }}

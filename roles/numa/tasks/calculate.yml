@@ -21,10 +21,19 @@
   set_fact:
     numa_node_count: "{{ numa_cache.numa_node_count }}"
     numa_nodes_info: "{{ numa_cache.numa_nodes_info }}"
+    numa_nodes_preferred_order: >-
+      {{
+        (
+          numa_cache.numa_nodes_preferred_order
+          | default(numa_cache.numa_nodes_info.keys() | list)
+        )
+        | map('string')
+        | list
+      }}
 
 - name: Set default NUMA node threshold
   set_fact:
-    numa_node_threshold: "{{ numa_node_threshold | default(2) }}"
+    numa_node_threshold: "{{ numa_node_threshold | default(4) }}"
 
 - name: Check if NUMA binding is needed
   set_fact:
@@ -54,36 +63,51 @@
   set_fact:
     suitable_numa_nodes: >-
       {{
-        suitable_numa_nodes | default([]) + [item.key]
+        suitable_numa_nodes | default([]) + [item]
       }}
-  with_items: "{{ numa_nodes_info | dict2items }}"
+  with_items: "{{ numa_nodes_preferred_order }}"
   when:
     - numa_binding_enabled
     - required_memory_mb is defined
-    - item.value.memory_mb >= (required_memory_mb | int)
+    - (numa_nodes_info[item].memory_mb | int) >= (required_memory_mb | int)
 
 - name: Select best NUMA node
   set_fact:
     selected_numa_node: >-
       {% if required_memory_mb is defined and suitable_numa_nodes | default([]) | length > 0 %}
       {{ suitable_numa_nodes[0] }}
+      {% elif required_memory_mb is defined %}
+      ""
       {% else %}
-      0
+      {{ (numa_nodes_preferred_order | default(['0']))[0] }}
       {% endif %}
   when: numa_binding_enabled
+
+- name: Clear NUMA configuration when no node selected
+  set_fact:
+    numa_cpuaffinity: ""
+    numa_policy: ""
+    numa_config_enabled: false
+  when:
+    - numa_binding_enabled
+    - selected_numa_node | length == 0
 
 - name: Get selected node information
   set_fact:
     selected_numa_cpus: "{{ numa_nodes_info[selected_numa_node].cpus }}"
     selected_numa_memory_mb: "{{ numa_nodes_info[selected_numa_node].memory_mb }}"
-  when: numa_binding_enabled
+  when:
+    - numa_binding_enabled
+    - selected_numa_node | length > 0
 
 - name: Set NUMA configuration for systemd
   set_fact:
     numa_cpuaffinity: "{{ selected_numa_cpus }}"
-    numa_policy: "bind"
+    numa_policy: "local"
     numa_config_enabled: true
-  when: numa_binding_enabled
+  when:
+    - numa_binding_enabled
+    - selected_numa_node | length > 0
 
 - name: Display calculated NUMA configuration
   debug:
@@ -94,11 +118,13 @@
       NUMAPolicy: {{ numa_policy }}
       Available Memory: {{ selected_numa_memory_mb }}MB
       {% if required_memory_mb is defined %}Required Memory: {{ required_memory_mb }}MB{% endif %}
-  when: numa_binding_enabled
+  when:
+    - numa_binding_enabled
+    - selected_numa_node | length > 0
 
 - name: Warn if no suitable NUMA node found
   debug:
-    msg: "WARNING: No NUMA node has enough memory ({{ required_memory_mb }}MB required). Using node 0."
+    msg: "WARNING: No NUMA node has enough memory ({{ required_memory_mb }}MB required). Leaving NUMA configuration unset."
   when:
     - numa_binding_enabled
     - required_memory_mb is defined
@@ -112,6 +138,8 @@
       [Service]
       CPUAffinity={{ numa_cpuaffinity }}
       NUMAPolicy={{ numa_policy }}
+      {% elif numa_binding_enabled %}
+      NUMA binding enabled but no suitable node found; leaving configuration empty.
       {% else %}
       NUMA binding is disabled (not enough nodes)
       {% endif %}
