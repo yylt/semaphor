@@ -54,6 +54,7 @@
     numa_cpuaffinity: ""
     numa_policy: ""
     selected_numa_node: ""
+    selected_numa_cpu_count: ""
     numa_config_enabled: false
   when: not numa_binding_enabled
 
@@ -90,6 +91,7 @@
   set_fact:
     numa_cpuaffinity: ""
     numa_policy: ""
+    selected_numa_cpu_count: ""
     numa_config_enabled: false
   when:
     - numa_binding_enabled
@@ -99,6 +101,13 @@
   set_fact:
     selected_numa_cpus: "{{ numa_nodes_info[selected_numa_node| trim].cpus }}"
     selected_numa_memory_mb: "{{ numa_nodes_info[selected_numa_node| trim].memory_mb }}"
+  when:
+    - numa_binding_enabled
+    - selected_numa_node | length > 0
+
+- name: Calculate selected NUMA CPU count
+  set_fact:
+    selected_numa_cpu_count: "{{ selected_numa_cpus.split() | length }}"
   when:
     - numa_binding_enabled
     - selected_numa_node | length > 0
@@ -118,6 +127,7 @@
       NUMA Configuration Enabled: YES
       Selected NUMA Node: {{ selected_numa_node }}
       CPUAffinity: {{ numa_cpuaffinity }}
+      CPUs on node: {{ selected_numa_cpu_count }}
       NUMAPolicy: {{ numa_policy }}
       Available Memory: {{ selected_numa_memory_mb }}MB
       {% if required_memory_mb is defined %}Required Memory: {{ required_memory_mb }}MB{% endif %}
@@ -141,6 +151,7 @@
       [Service]
       CPUAffinity={{ numa_cpuaffinity }}
       NUMAPolicy={{ numa_policy }}
+      # Optional: align application thread count (e.g., GOMAXPROCS) with {{ selected_numa_cpu_count }} CPUs
       {% elif numa_binding_enabled %}
       NUMA binding enabled but no suitable node found; leaving configuration empty.
       {% else %}
